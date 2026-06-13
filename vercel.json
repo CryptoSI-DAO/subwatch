@@ -1,0 +1,13 @@
+{
+  "buildCommand": "npx expo export --platform web --output-dir dist",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/supabase/(.*)", "destination": "/api/proxy" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ],
+  "functions": {
+    "api/proxy.js": {
+      "maxDuration": 30
+    }
+  }
+}
