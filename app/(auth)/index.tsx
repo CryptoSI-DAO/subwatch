@@ -19,10 +19,24 @@ export default function AuthScreen() {
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  function showAlert(title: string, message: string, type: 'error' | 'success' = 'error') {
+    if (Platform.OS === 'web') {
+      // On web, show inline instead of Alert.alert
+      if (type === 'error') setErrorMsg(`${title}: ${message}`);
+      else setSuccessMsg(message);
+    } else {
+      Alert.alert(title, message);
+    }
+  }
 
   async function handleAuth() {
+    setErrorMsg('');
+    setSuccessMsg('');
     if (!email || !password) {
-      Alert.alert('Missing fields', 'Please enter email and password');
+      showAlert('Missing fields', 'Please enter email and password');
       return;
     }
 
@@ -31,13 +45,14 @@ export default function AuthScreen() {
       if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        Alert.alert('Check your email', 'We sent you a confirmation link!');
+        showAlert('Check your email', 'We sent you a confirmation link!', 'success');
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        // On success, onAuthStateChange in _layout.tsx will navigate automatically
       }
     } catch (err: any) {
-      Alert.alert('Error', err.message);
+      showAlert('Error', err.message || 'Something went wrong');
     } finally {
       setLoading(false);
     }
@@ -54,6 +69,16 @@ export default function AuthScreen() {
         </View>
 
         <View style={styles.form}>
+          {errorMsg ? (
+            <View style={{ backgroundColor: '#fee', borderColor: '#f33', borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}>
+              <Text style={{ color: '#c00', fontSize: 14 }}>{errorMsg}</Text>
+            </View>
+          ) : null}
+          {successMsg ? (
+            <View style={{ backgroundColor: '#efe', borderColor: '#3c3', borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}>
+              <Text style={{ color: '#060', fontSize: 14 }}>{successMsg}</Text>
+            </View>
+          ) : null}
           <TextInput
             style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="Email"

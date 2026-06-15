@@ -15,9 +15,18 @@ function getSupabaseUrl(): string {
 
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
+// Platform-aware storage — AsyncStorage has no web impl, so use localStorage on web
+const supabaseStorage = Platform.OS === 'web' && typeof window !== 'undefined'
+  ? {
+      getItem: (key: string) => Promise.resolve(window.localStorage.getItem(key)),
+      setItem: (key: string, value: string) => Promise.resolve(window.localStorage.setItem(key, value)),
+      removeItem: (key: string) => Promise.resolve(window.localStorage.removeItem(key)),
+    }
+  : AsyncStorage;
+
 export const supabase = createClient(getSupabaseUrl(), supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: supabaseStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: Platform.OS === 'web',

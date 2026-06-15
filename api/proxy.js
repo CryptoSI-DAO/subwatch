@@ -27,20 +27,26 @@ module.exports = async (req, res) => {
     };
 
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) && req.body) {
+      // On Vercel, req.body may be parsed as object — stringify it
+      // If it's already a string (raw body), use as-is
       fetchOptions.body = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
     }
 
     const response = await fetch(targetUrl, fetchOptions);
+    
+    // Forward status code
+    res.status(response.status);
+    
+    // Forward relevant response headers
     const contentType = response.headers.get('content-type') || '';
-
     if (contentType) res.setHeader('Content-Type', contentType);
 
     if (contentType.includes('application/json')) {
-      const data = await response.json();
-      res.status(response.status).json(data);
+      const text = await response.text();
+      res.send(text);
     } else {
       const text = await response.text();
-      res.status(response.status).send(text);
+      res.send(text);
     }
   } catch (error) {
     console.error('Supabase proxy error:', error.message);
