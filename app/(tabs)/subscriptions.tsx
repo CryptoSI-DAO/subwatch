@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import {
   FlatList,
+  Image,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -134,7 +135,11 @@ export default function SubscriptionsScreen() {
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>{searchQuery ? '🔍' : '📋'}</Text>
+              <Image
+                source={require('@/assets/illustrations/empty-subscriptions.png')}
+                style={styles.emptyImage}
+                resizeMode="contain"
+              />
               <Text style={[styles.emptyText, { color: colors.emptyText }]}>
                 {searchQuery ? 'No matching subscriptions' : 'No subscriptions yet'}
               </Text>
@@ -204,8 +209,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   inactiveText: { color: '#fff', fontSize: 9, fontWeight: '700' },
-  emptyState: { alignItems: 'center', paddingVertical: 60, gap: 8 },
-  emptyIcon: { fontSize: 48 },
+  emptyState: { alignItems: 'center', paddingVertical: 40, gap: 8 },
+  emptyImage: { width: 200, height: 150, marginBottom: 8 },
   emptyText: { fontSize: 18, fontWeight: '600' },
   emptySubtext: { fontSize: 14 },
 });

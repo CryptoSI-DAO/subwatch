@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS public.subscriptions (
     price NUMERIC(10,2) NOT NULL DEFAULT 0,
     billing_cycle TEXT DEFAULT 'monthly',
     cycle_days INTEGER DEFAULT 30,
-    category_id TEXT,
+    category_id INTEGER DEFAULT 10,
     icon TEXT,
     color TEXT,
     next_billing_date DATE,

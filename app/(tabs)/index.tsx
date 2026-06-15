@@ -7,6 +7,8 @@ import {
   RefreshControl,
   Pressable,
   TextInput,
+  Image,
+  ImageBackground,
 } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { supabase } from '@/src/lib/supabase';
@@ -73,7 +75,7 @@ export default function DashboardScreen() {
 
   // Category breakdown
   const byCategory = CATEGORIES.map((cat) => {
-    const items = filteredSubscriptions.filter((s) => s.category_id === cat.id);
+    const items = filteredSubscriptions.filter((s) => Number(s.category_id) === cat.id);
     const monthly = items.reduce(
       (sum, s) => sum + getMonthlyCost(s.price, s.billing_cycle, s.cycle_days),
       0
@@ -120,14 +122,18 @@ export default function DashboardScreen() {
       refreshControl={<RefreshControl refreshing={loading} onRefresh={loadData} tintColor={colors.primary} />}
     >
       {/* Hero card */}
-      <View style={[styles.heroCard, { backgroundColor: colors.primary }]}>
+      <ImageBackground
+        source={require('@/assets/illustrations/hero-bg.png')}
+        style={styles.heroCard}
+        imageStyle={styles.heroImage}
+      >
         <Text style={styles.heroLabel}>Monthly Spend</Text>
         <Text style={styles.heroAmount}>{formatCurrency(monthlyTotal)}</Text>
         <View style={styles.heroRow}>
           <Text style={styles.heroSecondary}>Yearly: {formatCurrency(yearlyTotal)}</Text>
           <Text style={styles.heroCount}>{filteredSubscriptions.length} active</Text>
         </View>
-      </View>
+      </ImageBackground>
 
       {/* Search bar */}
       <View style={[styles.searchWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -234,7 +240,11 @@ export default function DashboardScreen() {
 
       {filteredSubscriptions.length === 0 && !loading && (
         <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>{searchQuery ? '🔍' : '📭'}</Text>
+          <Image
+            source={require('@/assets/illustrations/empty-dashboard.png')}
+            style={styles.emptyImage}
+            resizeMode="contain"
+          />
           <Text style={[styles.emptyText, { color: colors.emptyText }]}>
             {searchQuery ? 'No matching subscriptions' : 'No subscriptions yet'}
           </Text>
@@ -255,6 +265,10 @@ const styles = StyleSheet.create({
     padding: 28,
     alignItems: 'center',
     gap: 6,
+    overflow: 'hidden',
+  },
+  heroImage: {
+    borderRadius: 20,
   },
   heroLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 15, fontWeight: '500' },
   heroAmount: { color: '#fff', fontSize: 48, fontWeight: '800', letterSpacing: -1 },
@@ -314,8 +328,8 @@ const styles = StyleSheet.create({
   barBg: { height: 6, borderRadius: 3 },
   barFill: { height: 6, borderRadius: 3 },
   categoryPct: { fontSize: 12 },
-  emptyState: { alignItems: 'center', paddingVertical: 60, gap: 8 },
-  emptyIcon: { fontSize: 48 },
+  emptyState: { alignItems: 'center', paddingVertical: 40, gap: 8 },
+  emptyImage: { width: 200, height: 150, marginBottom: 8 },
   emptyText: { fontSize: 18, fontWeight: '600' },
   emptySubtext: { fontSize: 14 },
 });

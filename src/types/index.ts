@@ -6,7 +6,7 @@ export interface Subscription {
   currency: string;
   billing_cycle: 'monthly' | 'yearly' | 'custom';
   cycle_days: number;
-  category_id: number | null;
+  category_id: number;
   icon: string;
   color: string;
   next_billing_date: string | null;
@@ -45,11 +45,11 @@ export const CATEGORIES = [
 ] as const;
 
 export function getCategoryName(id: number | null): string {
-  return CATEGORIES.find((c) => c.id === id)?.name ?? 'Other';
+  return CATEGORIES.find((c) => c.id === Number(id))?.name ?? 'Other';
 }
 
 export function getCategoryIcon(id: number | null): string {
-  return CATEGORIES.find((c) => c.id === id)?.icon ?? '📦';
+  return CATEGORIES.find((c) => c.id === Number(id))?.icon ?? '📦';
 }
 
 // Calculate monthly cost from billing cycle
