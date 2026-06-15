@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, Alert, ScrollView, Platform, Linking, Share } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, ScrollView, TextInput, Platform, Linking, Share } from 'react-native';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { supabase } from '@/src/lib/supabase';
@@ -8,20 +8,26 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const NOTIFICATION_TIME_KEY = '@subwatch_notification_time';
 const NOTIFICATION_ENABLED_KEY = '@subwatch_notifications_enabled';
+const NOTIFICATION_DAY_KEY = '@subwatch_notification_day';
+
+const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 export default function SettingsScreen() {
   const { colors, mode, setMode, isDark } = useTheme();
   const [exporting, setExporting] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-  const [notificationTime, setNotificationTime] = useState('21:00');
+  const [notificationTime, setNotificationTime] = useState('09:00');
+  const [notificationDay, setNotificationDay] = useState(1); // Monday
 
   // Load notification prefs on mount
   useState(() => {
     (async () => {
       const enabled = await AsyncStorage.getItem(NOTIFICATION_ENABLED_KEY);
       const time = await AsyncStorage.getItem(NOTIFICATION_TIME_KEY);
+      const day = await AsyncStorage.getItem(NOTIFICATION_DAY_KEY);
       if (enabled === 'true') setNotificationsEnabled(true);
       if (time) setNotificationTime(time);
+      if (day !== null) setNotificationDay(Number(day));
     })();
   });
 
@@ -190,11 +196,12 @@ export default function SettingsScreen() {
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: '👁️ SubWatch Reminder',
-        body: 'Check your subscriptions for upcoming bills!',
-        data: { screen: '/(tabs)/dashboard' },
+        title: '👁️ SubWatch Weekly Check-In',
+        body: 'Time to review your subscriptions and check for price changes!',
+        data: { screen: '/(tabs)' },
       },
       trigger: {
+        weekday: notificationDay + 1, // Expo uses 1=Sunday, our array uses 0=Sunday
         hour: hours,
         minute: minutes,
         repeats: true,
@@ -248,11 +255,11 @@ export default function SettingsScreen() {
       <View style={[styles.section, { backgroundColor: colors.surface }]}>
         <Text style={[styles.sectionTitle, { color: colors.text }]}>🔔 Notifications</Text>
         <View style={[styles.row, { borderBottomColor: colors.separator }]}>
-          <Text style={[styles.rowIcon]}>⏰</Text>
+          <Text style={[styles.rowIcon]}>📅</Text>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.rowTitle, { color: colors.text }]}>Daily Reminder</Text>
+            <Text style={[styles.rowTitle, { color: colors.text }]}>Weekly Check-In</Text>
             <Text style={[styles.rowDesc, { color: colors.textSecondary }]}>
-              {notificationsEnabled ? `Enabled at ${notificationTime}` : 'Get reminded to check your subscriptions'}
+              {notificationsEnabled ? `Every ${DAYS[notificationDay]} at ${notificationTime}` : 'Get a weekly nudge to review your subs'}
             </Text>
           </View>
           <Pressable
@@ -262,6 +269,49 @@ export default function SettingsScreen() {
             <View style={[styles.toggleKnob, notificationsEnabled && styles.toggleKnobActive]} />
           </Pressable>
         </View>
+        {notificationsEnabled && (
+          <>
+            <View style={styles.dayPickerRow}>
+              <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>Day:</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.dayPickerScroll}>
+                {DAYS.map((day, idx) => (
+                  <Pressable
+                    key={day}
+                    style={[
+                      styles.dayChip,
+                      { borderColor: colors.border },
+                      notificationDay === idx && { backgroundColor: colors.primary, borderColor: colors.primary },
+                    ]}
+                    onPress={async () => {
+                      setNotificationDay(idx);
+                      await AsyncStorage.setItem(NOTIFICATION_DAY_KEY, String(idx));
+                      await scheduleNotification();
+                    }}
+                  >
+                    <Text style={[styles.dayChipText, notificationDay === idx && { color: '#fff' }]}>
+                      {day.slice(0, 3)}
+                    </Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            </View>
+            <View style={styles.timePickerRow}>
+              <Text style={[styles.pickerLabel, { color: colors.textSecondary }]}>Time:</Text>
+              <TextInput
+                style={[styles.timeInput, { backgroundColor: colors.inputBg || colors.background, color: colors.text, borderColor: colors.border }]}
+                value={notificationTime}
+                onChangeText={(v) => setNotificationTime(v)}
+                onEndEditing={async () => {
+                  await AsyncStorage.setItem(NOTIFICATION_TIME_KEY, notificationTime);
+                  await scheduleNotification();
+                }}
+                placeholder="09:00"
+                keyboardType="numbers-and-punctuation"
+                maxLength={5}
+              />
+            </View>
+          </>
+        )}
       </View>
 
       {/* Data */}
@@ -366,6 +416,39 @@ const styles = StyleSheet.create({
   },
   toggleKnobActive: {
     alignSelf: 'flex-end',
+  },
+  dayPickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  dayPickerScroll: { flex: 1 },
+  dayChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 6,
+  },
+  dayChipText: { fontSize: 13, fontWeight: '600' },
+  timePickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  pickerLabel: { fontSize: 14, fontWeight: '500' },
+  timeInput: {
+    borderRadius: 8,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    fontSize: 15,
+    width: 80,
+    textAlign: 'center',
   },
   dangerZone: { gap: 10 },
   dangerBtn: {
