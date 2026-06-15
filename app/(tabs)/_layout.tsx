@@ -1,31 +1,34 @@
 import { Tabs } from 'expo-router';
 import { Pressable, Text } from 'react-native';
+import { useTheme } from '@/src/lib/theme';
 
 function TabBarIcon({ icon }: { icon: string }) {
   return <Text style={{ fontSize: 24 }}>{icon}</Text>;
 }
 
 export default function TabLayout() {
+  const { colors } = useTheme();
+
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.textSecondary,
         tabBarStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: colors.tabBar,
           borderTopWidth: 1,
-          borderTopColor: '#E5E5EA',
+          borderTopColor: colors.tabBarBorder,
           paddingBottom: 4,
           height: 56,
         },
         headerTitleStyle: {
           fontSize: 20,
           fontWeight: '700',
-          color: '#000',
+          color: colors.text,
         },
         headerShadowVisible: false,
         headerStyle: {
-          backgroundColor: '#fff',
+          backgroundColor: colors.headerBg,
         },
       }}
     >

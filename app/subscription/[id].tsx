@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { supabase } from '@/src/lib/supabase';
+import { useTheme } from '@/src/lib/theme';
 import {
   type Subscription,
   type PriceHistory,
@@ -23,8 +24,7 @@ import {
 import { format, parseISO } from 'date-fns';
 import { Svg, Polyline, Line, Circle, Text as SvgText } from 'react-native-svg';
 
-// Custom lightweight SVG chart
-function PriceChartSVG({ data, color }: { data: { x: Date; y: number }[]; color: string }) {
+function PriceChartSVG({ data, color, colors }: { data: { x: Date; y: number }[]; color: string; colors: any }) {
   const W = 320;
   const H = 180;
   const PAD = { top: 20, bottom: 35, left: 50, right: 20 };
@@ -43,35 +43,28 @@ function PriceChartSVG({ data, color }: { data: { x: Date; y: number }[]; color:
   });
 
   const polylinePoints = points.map((p) => `${p.px},${p.py}`).join(' ');
-
-  // Y axis labels
   const yLabels = [maxVal, (maxVal + minVal) / 2, minVal];
 
   return (
     <Svg width={W} height={H}>
-      {/* Y axis labels */}
       {yLabels.map((v, i) => {
         const y = PAD.top + (i / 2) * chartH;
         return (
-          <SvgText key={i} x={PAD.left - 8} y={y + 4} fontSize={10} fill="#8E8E93" textAnchor="end">
+          <SvgText key={i} x={PAD.left - 8} y={y + 4} fontSize={10} fill={colors.svgText} textAnchor="end">
             ${v.toFixed(2)}
           </SvgText>
         );
       })}
-      {/* Grid lines */}
       {yLabels.map((v, i) => {
         const y = PAD.top + (i / 2) * chartH;
-        return <Line key={`g${i}`} x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke="#F2F2F7" strokeWidth={1} />;
+        return <Line key={`g${i}`} x1={PAD.left} y1={y} x2={W - PAD.right} y2={y} stroke={colors.gridLine} strokeWidth={1} />;
       })}
-      {/* Price line */}
       <Polyline points={polylinePoints} fill="none" stroke={color} strokeWidth={3} strokeLinejoin="round" strokeLinecap="round" />
-      {/* Data points */}
       {points.map((p, i) => (
         <Circle key={`p${i}`} cx={p.px} cy={p.py} r={5} fill={color} />
       ))}
-      {/* X axis labels */}
       {points.map((p, i) => (
-        <SvgText key={`x${i}`} x={p.px} y={H - 8} fontSize={10} fill="#8E8E93" textAnchor="middle">
+        <SvgText key={`x${i}`} x={p.px} y={H - 8} fontSize={10} fill={colors.svgText} textAnchor="middle">
           {format(p.date, 'MMM d')}
         </SvgText>
       ))}
@@ -79,8 +72,8 @@ function PriceChartSVG({ data, color }: { data: { x: Date; y: number }[]; color:
   );
 }
 
-
 export default function SubscriptionDetailScreen() {
+  const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [history, setHistory] = useState<PriceHistory[]>([]);
@@ -114,14 +107,12 @@ export default function SubscriptionDetailScreen() {
     const priceNum = parseFloat(newPrice);
     if (isNaN(priceNum)) return;
 
-    // Insert price history
     await supabase.from('price_history').insert({
       subscription_id: sub.id,
       old_price: sub.price,
       new_price: priceNum,
     });
 
-    // Update subscription
     await supabase.from('subscriptions').update({ price: priceNum }).eq('id', sub.id);
 
     setShowPriceModal(false);
@@ -152,16 +143,16 @@ export default function SubscriptionDetailScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#007AFF" />
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
   }
 
   if (!sub) {
     return (
-      <View style={styles.center}>
-        <Text style={styles.emptyText}>Subscription not found</Text>
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Subscription not found</Text>
       </View>
     );
   }
@@ -179,7 +170,7 @@ export default function SubscriptionDetailScreen() {
     : 0;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
       {/* Header card */}
       <View style={[styles.headerCard, { backgroundColor: sub.color }]}>
         <View style={[styles.iconCircle, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
@@ -188,51 +179,62 @@ export default function SubscriptionDetailScreen() {
         <Text style={styles.headerName}>{sub.name}</Text>
         <Text style={styles.headerPrice}>{formatCurrency(sub.price, sub.currency)}</Text>
         <Text style={styles.headerCycle}>{sub.billing_cycle} · {getCategoryName(sub.category_id)}</Text>
-        {!sub.active && <View style={styles.inactiveTag}><Text style={styles.inactiveTagText}>INACTIVE</Text></View>}
+        {!sub.active && (
+          <View style={[styles.inactiveTag, { backgroundColor: colors.inactiveBadge }]}>
+            <Text style={[styles.inactiveTagText, { color: colors.inactiveBadgeText }]}>INACTIVE</Text>
+          </View>
+        )}
       </View>
 
       {/* Cost summary */}
       <View style={styles.summaryRow}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Monthly</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(getMonthlyCost(sub.price, sub.billing_cycle, sub.cycle_days))}</Text>
+        <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Monthly</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>{formatCurrency(getMonthlyCost(sub.price, sub.billing_cycle, sub.cycle_days))}</Text>
         </View>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryLabel}>Yearly</Text>
-          <Text style={styles.summaryValue}>{formatCurrency(getYearlyCost(sub.price, sub.billing_cycle, sub.cycle_days))}</Text>
+        <View style={[styles.summaryCard, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.summaryLabel, { color: colors.textSecondary }]}>Yearly</Text>
+          <Text style={[styles.summaryValue, { color: colors.text }]}>{formatCurrency(getYearlyCost(sub.price, sub.billing_cycle, sub.cycle_days))}</Text>
         </View>
       </View>
 
       {/* Price history chart */}
       {priceChanges.length >= 2 ? (
-        <View style={styles.section}>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>📈 Price History</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>📈 Price History</Text>
             {totalChange !== 0 && (
-              <Text style={[styles.changeBadge, totalChange > 0 ? styles.changeUp : styles.changeDown]}>
+              <Text
+                style={[
+                  styles.changeBadge,
+                  totalChange > 0
+                    ? { backgroundColor: colors.changeUpBg, color: colors.changeUp }
+                    : { backgroundColor: colors.changeDownBg, color: colors.changeDown },
+                ]}
+              >
                 {totalChange > 0 ? '▲' : '▼'} {formatCurrency(Math.abs(totalChange), sub.currency)} ({Math.abs(pctChange).toFixed(0)}%)
               </Text>
             )}
           </View>
-          <PriceChartSVG data={priceChanges} color={totalChange >= 0 ? '#FF3B30' : '#34C759'} />
+          <PriceChartSVG data={priceChanges} color={totalChange >= 0 ? colors.changeUp : colors.changeDown} colors={colors} />
         </View>
       ) : (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📈 Price History</Text>
-          <Text style={styles.emptyChart}>No price changes logged yet</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📈 Price History</Text>
+          <Text style={[styles.emptyChart, { color: colors.textSecondary }]}>No price changes logged yet</Text>
         </View>
       )}
 
       {/* History log */}
       {history.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📋 Change Log</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📋 Change Log</Text>
           {history.slice().reverse().map((h, i) => (
-            <View key={h.id || i} style={styles.logItem}>
-              <Text style={styles.logDate}>
+            <View key={h.id || i} style={[styles.logItem, { borderBottomColor: colors.separator }]}>
+              <Text style={[styles.logDate, { color: colors.textSecondary }]}>
                 {format(parseISO(h.changed_at), 'MMM d, yyyy')}
               </Text>
-              <Text style={styles.logChange}>
+              <Text style={[styles.logChange, { color: colors.text }]}>
                 {h.old_price !== null
                   ? `${formatCurrency(h.old_price, sub.currency)} → ${formatCurrency(h.new_price, sub.currency)}`
                   : `Started at ${formatCurrency(h.new_price, sub.currency)}`}
@@ -244,47 +246,47 @@ export default function SubscriptionDetailScreen() {
 
       {/* Notes */}
       {sub.notes && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>📝 Notes</Text>
-          <Text style={styles.notesText}>{sub.notes}</Text>
+        <View style={[styles.section, { backgroundColor: colors.surface }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>📝 Notes</Text>
+          <Text style={[styles.notesText, { color: colors.text }]}>{sub.notes}</Text>
         </View>
       )}
 
       {/* Actions */}
       <View style={styles.actions}>
-        <Pressable style={styles.actionBtn} onPress={() => { setNewPrice(sub.price.toString()); setShowPriceModal(true); }}>
+        <Pressable style={[styles.actionBtn, { backgroundColor: colors.primary }]} onPress={() => { setNewPrice(sub.price.toString()); setShowPriceModal(true); }}>
           <Text style={styles.actionBtnText}>💰 Log Price Change</Text>
         </Pressable>
-        <Pressable style={[styles.actionBtn, styles.actionBtnSecondary]} onPress={handleToggleActive}>
-          <Text style={styles.actionBtnSecondaryText}>
+        <Pressable style={[styles.actionBtn, styles.actionBtnSecondary, { backgroundColor: colors.surface }]} onPress={handleToggleActive}>
+          <Text style={[styles.actionBtnSecondaryText, { color: colors.text }]}>
             {sub.active ? '🚫 Mark Inactive' : '✅ Mark Active'}
           </Text>
         </Pressable>
-        <Pressable style={[styles.actionBtn, styles.actionBtnDanger]} onPress={handleDelete}>
-          <Text style={styles.actionBtnDangerText}>🗑️ Delete</Text>
+        <Pressable style={[styles.actionBtn, styles.actionBtnDanger, { backgroundColor: colors.surface }]} onPress={handleDelete}>
+          <Text style={[styles.actionBtnDangerText, { color: colors.danger }]}>🗑️ Delete</Text>
         </Pressable>
       </View>
 
       {/* Price update modal */}
       <Modal visible={showPriceModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Log New Price</Text>
-            <Text style={styles.modalSub}>Current: {formatCurrency(sub.price, sub.currency)}</Text>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
+          <View style={[styles.modalCard, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Log New Price</Text>
+            <Text style={[styles.modalSub, { color: colors.textSecondary }]}>Current: {formatCurrency(sub.price, sub.currency)}</Text>
             <TextInput
-              style={styles.modalInput}
+              style={[styles.modalInput, { backgroundColor: colors.inputBg, color: colors.text }]}
               value={newPrice}
               onChangeText={setNewPrice}
               placeholder="New price"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="decimal-pad"
               autoFocus
             />
             <View style={styles.modalActions}>
-              <Pressable style={[styles.modalBtn, styles.modalBtnCancel]} onPress={() => setShowPriceModal(false)}>
-                <Text style={styles.modalBtnText}>Cancel</Text>
+              <Pressable style={[styles.modalBtn, styles.modalBtnCancel, { backgroundColor: colors.border }]} onPress={() => setShowPriceModal(false)}>
+                <Text style={[styles.modalBtnText, { color: colors.text }]}>Cancel</Text>
               </Pressable>
-              <Pressable style={[styles.modalBtn, styles.modalBtnSave]} onPress={handlePriceUpdate}>
+              <Pressable style={[styles.modalBtn, styles.modalBtnSave, { backgroundColor: colors.primary }]} onPress={handlePriceUpdate}>
                 <Text style={styles.modalBtnTextWhite}>Save</Text>
               </Pressable>
             </View>
@@ -296,49 +298,47 @@ export default function SubscriptionDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F2F2F7' },
+  container: { flex: 1 },
   content: { padding: 16, gap: 14, paddingBottom: 40 },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F2F2F7' },
-  emptyText: { fontSize: 16, color: '#8E8E93' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  emptyText: { fontSize: 16 },
   headerCard: { borderRadius: 20, padding: 28, alignItems: 'center', gap: 4 },
   iconCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   headerIcon: { fontSize: 32 },
   headerName: { color: '#fff', fontSize: 22, fontWeight: '700' },
   headerPrice: { color: '#fff', fontSize: 40, fontWeight: '800', letterSpacing: -1 },
   headerCycle: { color: 'rgba(255,255,255,0.7)', fontSize: 14 },
-  inactiveTag: { backgroundColor: 'rgba(0,0,0,0.3)', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginTop: 6 },
-  inactiveTagText: { color: '#fff', fontSize: 10, fontWeight: '700' },
+  inactiveTag: { borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, marginTop: 6 },
+  inactiveTagText: { fontSize: 10, fontWeight: '700' },
   summaryRow: { flexDirection: 'row', gap: 12 },
-  summaryCard: { flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 16, alignItems: 'center' },
-  summaryLabel: { fontSize: 13, color: '#8E8E93', fontWeight: '500' },
-  summaryValue: { fontSize: 22, fontWeight: '700', color: '#000', marginTop: 4 },
-  section: { backgroundColor: '#fff', borderRadius: 16, padding: 16, gap: 10 },
+  summaryCard: { flex: 1, borderRadius: 14, padding: 16, alignItems: 'center' },
+  summaryLabel: { fontSize: 13, fontWeight: '500' },
+  summaryValue: { fontSize: 22, fontWeight: '700', marginTop: 4 },
+  section: { borderRadius: 16, padding: 16, gap: 10 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
+  sectionTitle: { fontSize: 18, fontWeight: '700' },
   changeBadge: { fontSize: 12, fontWeight: '600', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  changeUp: { backgroundColor: '#FF3B3015', color: '#FF3B30' },
-  changeDown: { backgroundColor: '#34C75915', color: '#34C759' },
-  emptyChart: { fontSize: 14, color: '#8E8E93', textAlign: 'center', paddingVertical: 20 },
-  logItem: { paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: '#E5E5EA' },
-  logDate: { fontSize: 12, color: '#8E8E93' },
-  logChange: { fontSize: 15, color: '#000', fontWeight: '500', marginTop: 2 },
-  notesText: { fontSize: 15, color: '#000', lineHeight: 22 },
+  emptyChart: { fontSize: 14, textAlign: 'center', paddingVertical: 20 },
+  logItem: { paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  logDate: { fontSize: 12 },
+  logChange: { fontSize: 15, fontWeight: '500', marginTop: 2 },
+  notesText: { fontSize: 15, lineHeight: 22 },
   actions: { gap: 10 },
-  actionBtn: { backgroundColor: '#007AFF', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  actionBtn: { borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
   actionBtnText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  actionBtnSecondary: { backgroundColor: '#fff' },
-  actionBtnSecondaryText: { color: '#000', fontSize: 16, fontWeight: '500' },
-  actionBtnDanger: { backgroundColor: '#fff' },
-  actionBtnDangerText: { color: '#FF3B30', fontSize: 16, fontWeight: '500' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 30 },
-  modalCard: { backgroundColor: '#fff', borderRadius: 20, padding: 24, width: '100%', gap: 12 },
-  modalTitle: { fontSize: 20, fontWeight: '700', color: '#000' },
-  modalSub: { fontSize: 14, color: '#8E8E93' },
-  modalInput: { backgroundColor: '#F2F2F7', borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 18, color: '#000' },
+  actionBtnSecondary: {},
+  actionBtnSecondaryText: { fontSize: 16, fontWeight: '500' },
+  actionBtnDanger: {},
+  actionBtnDangerText: { fontSize: 16, fontWeight: '500' },
+  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 30 },
+  modalCard: { borderRadius: 20, padding: 24, width: '100%', gap: 12 },
+  modalTitle: { fontSize: 20, fontWeight: '700' },
+  modalSub: { fontSize: 14 },
+  modalInput: { borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14, fontSize: 18 },
   modalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
   modalBtn: { flex: 1, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  modalBtnCancel: { backgroundColor: '#E5E5EA' },
-  modalBtnSave: { backgroundColor: '#007AFF' },
-  modalBtnText: { fontSize: 16, fontWeight: '600', color: '#000' },
+  modalBtnCancel: {},
+  modalBtnSave: {},
+  modalBtnText: { fontSize: 16, fontWeight: '600' },
   modalBtnTextWhite: { fontSize: 16, fontWeight: '600', color: '#fff' },
 });

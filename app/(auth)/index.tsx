@@ -11,8 +11,10 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useTheme } from '@/src/lib/theme';
 
 export default function AuthScreen() {
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
@@ -42,20 +44,20 @@ export default function AuthScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Stack.Screen options={{ headerShown: false }} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.inner}>
         <View style={styles.logoWrap}>
           <Text style={styles.logo}>👁️</Text>
-          <Text style={styles.title}>SubWatch</Text>
-          <Text style={styles.subtitle}>Track subscriptions. Catch price hikes.</Text>
+          <Text style={[styles.title, { color: colors.text }]}>SubWatch</Text>
+          <Text style={[styles.subtitle, { color: colors.textSecondary }]}>Track subscriptions. Catch price hikes.</Text>
         </View>
 
         <View style={styles.form}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="Email"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
@@ -63,16 +65,16 @@ export default function AuthScreen() {
             textContentType="emailAddress"
           />
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: colors.inputBg, color: colors.text, borderColor: colors.border }]}
             placeholder="Password"
-            placeholderTextColor="#8E8E93"
+            placeholderTextColor={colors.textSecondary}
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             textContentType={mode === 'signin' ? 'password' : 'newPassword'}
           />
 
-          <Pressable style={styles.button} onPress={handleAuth} disabled={loading}>
+          <Pressable style={[styles.button, { backgroundColor: colors.primary }]} onPress={handleAuth} disabled={loading}>
             <Text style={styles.buttonText}>
               {loading ? 'Please wait...' : mode === 'signin' ? 'Sign In' : 'Create Account'}
             </Text>
@@ -82,13 +84,13 @@ export default function AuthScreen() {
             style={styles.switchMode}
             onPress={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
           >
-            <Text style={styles.switchText}>
+            <Text style={[styles.switchText, { color: colors.primary }]}>
               {mode === 'signin' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
             </Text>
           </Pressable>
         </View>
 
-        <Text style={styles.footer}>CryptoSI DAO · No bank linking · 100% private</Text>
+        <Text style={[styles.footer, { color: colors.emptySubtext }]}>CryptoSI DAO · No bank linking · 100% private</Text>
       </KeyboardAvoidingView>
     </View>
   );
@@ -97,7 +99,6 @@ export default function AuthScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
   },
   inner: {
     flex: 1,
@@ -115,29 +116,23 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#000',
     letterSpacing: -1,
   },
   subtitle: {
     fontSize: 15,
-    color: '#8E8E93',
     textAlign: 'center',
   },
   form: {
     gap: 12,
   },
   input: {
-    backgroundColor: '#fff',
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 16,
     fontSize: 17,
-    color: '#000',
     borderWidth: 1,
-    borderColor: '#E5E5EA',
   },
   button: {
-    backgroundColor: '#007AFF',
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
@@ -153,12 +148,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   switchText: {
-    color: '#007AFF',
     fontSize: 15,
   },
   footer: {
     textAlign: 'center',
     fontSize: 13,
-    color: '#C7C7CC',
   },
 });
