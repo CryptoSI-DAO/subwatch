@@ -1,6 +1,6 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '@/src/lib/supabase';
@@ -20,6 +20,7 @@ function AppContent() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { colors, isDark } = useTheme();
+  const isInitialLoad = useRef(true);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -27,9 +28,26 @@ function AppContent() {
       setLoading(false);
     });
 
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
+      
+      // Skip navigation on initial load — getSession already handled it
+      if (isInitialLoad.current) {
+        isInitialLoad.current = false;
+        return;
+      }
+      
+      // Only navigate on actual auth state changes (not initial check)
+      if (event === 'SIGNED_IN') {
+        router.replace('/(tabs)');
+      } else if (event === 'SIGNED_OUT') {
+        router.replace('/(auth)');
+      }
     });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   if (loading) {
