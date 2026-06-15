@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '@/src/lib/supabase';
 import { useTheme } from '@/src/lib/theme';
+import { playCelebration, unlockAudio } from '@/src/lib/sounds';
+import { burstConfetti, tickerTape, miniPop } from '@/src/lib/confetti';
 import {
   type Offer,
   type Subscription,
@@ -69,11 +71,17 @@ export default function OffersScreen() {
     setLoading(false);
   }, []);
 
+  // Track whether we've already celebrated this session
+  const hasCelebrated = useRef(false);
+
   useFocusEffect(
     useCallback(() => {
+      unlockAudio(); // unlock audio on first tab visit
       loadData();
     }, [loadData])
   );
+
+  // Fire confetti + celebration sound (moved below — needs weeklyOffers/monthlyOffers)
 
   function buildComparison(offer: Offer): OfferComparison {
     const matchingSubs = subscriptions.filter(
@@ -116,6 +124,23 @@ export default function OffersScreen() {
     .filter((c) => c.verdict === 'save')
     .reduce((sum, c) => sum + (c.yearlySavings || 0), 0);
 
+  // 🎊 Fire confetti + celebration sound once when offers load
+  useEffect(() => {
+    if (!loading && offers.length > 0 && !hasCelebrated.current) {
+      hasCelebrated.current = true;
+      const hasSavings = weeklyOffers.some(c => c.verdict === 'save') ||
+                         monthlyOffers.some(c => c.verdict === 'save');
+      if (hasSavings) {
+        setTimeout(() => {
+          burstConfetti();
+          playCelebration();
+        }, 400);
+      } else {
+        setTimeout(() => tickerTape(1200), 300);
+      }
+    }
+  }, [loading, offers, weeklyOffers, monthlyOffers]);
+
   function renderOfferCard(comp: OfferComparison, key: string) {
     const { offer, userSub, verdict, monthlySavings, yearlySavings } = comp;
     const discountPct = offer.normal_price > 0
@@ -126,7 +151,12 @@ export default function OffersScreen() {
       <Pressable
         key={key}
         style={[styles.offerCard, { backgroundColor: colors.surface }]}
-        onPress={() => offer.referral_url && Linking.openURL(offer.referral_url)}
+        onPress={() => {
+          if (offer.referral_url) {
+            miniPop(); // 🎊 mini confetti on tapping an offer
+            Linking.openURL(offer.referral_url);
+          }
+        }}
       >
         {/* Top row: icon + name + discount badge */}
         <View style={styles.offerHeader}>

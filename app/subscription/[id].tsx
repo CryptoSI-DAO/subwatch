@@ -23,6 +23,7 @@ import {
 } from '@/src/types';
 import { format, parseISO } from 'date-fns';
 import { Svg, Polyline, Line, Circle, Text as SvgText } from 'react-native-svg';
+import { playWhoosh } from '@/src/lib/sounds';
 
 function PriceChartSVG({ data, color, colors }: { data: { x: Date; y: number }[]; color: string; colors: any }) {
   const W = 320;
@@ -100,6 +101,7 @@ export default function SubscriptionDetailScreen() {
 
   useEffect(() => {
     loadData();
+    playWhoosh(); // 🔊 soft whoosh on opening detail page
   }, [loadData]);
 
   async function handlePriceUpdate() {

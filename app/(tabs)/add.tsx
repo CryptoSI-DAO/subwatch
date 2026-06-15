@@ -15,6 +15,7 @@ import { supabase } from '@/src/lib/supabase';
 import { useTheme } from '@/src/lib/theme';
 import { CATEGORIES } from '@/src/types';
 import { TEMPLATES, type Template } from '@/src/data/templates';
+import { playPop } from '@/src/lib/sounds';
 
 const COLORS = ['#007AFF', '#FF3B30', '#34C759', '#FF9500', '#AF52DE', '#FF2D55', '#5856D6', '#00C7BE', '#FFD60A', '#AC8E68'];
 
@@ -81,21 +82,8 @@ export default function AddScreen() {
     });
 
     if (!error) {
-      const { data: newSub } = await supabase
-        .from('subscriptions')
-        .select('id')
-        .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (newSub) {
-        await supabase.from('price_history').insert({
-          subscription_id: newSub.id,
-          old_price: null,
-          new_price: parseFloat(price),
-        });
-      }
+      // DB trigger auto-logs initial price to price_history — no manual insert needed
+      playPop(); // 🔊 satisfying pop
     }
 
     setSaving(false);
