@@ -15,6 +15,7 @@ import { supabase } from '@/src/lib/supabase';
 import { useTheme } from '@/src/lib/theme';
 import {
   type Subscription,
+  type PriceHistory,
   type Category,
   CATEGORIES,
   getCategoryName,
@@ -27,6 +28,7 @@ import {
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [priceAlerts, setPriceAlerts] = useState<{ sub: Subscription; change: PriceHistory }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -35,16 +37,47 @@ export default function DashboardScreen() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .eq('active', true)
-      .order('name');
+    const [subsRes, alertsRes] = await Promise.all([
+      supabase
+        .from('subscriptions')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .eq('active', true)
+        .order('name'),
+      // Fetch recent price increases (last 90 days)
+      supabase
+        .from('price_history')
+        .select(`
+          *,
+          subscription:subscriptions!inner(*)
+        `)
+        .not('old_price', 'is', null)
+        .gt('new_price', '0')
+        .order('changed_at', { ascending: false })
+        .limit(20),
+    ]);
 
-    if (!error && data) {
-      setSubscriptions(data as Subscription[]);
+    if (!subsRes.error && subsRes.data) {
+      setSubscriptions(subsRes.data as Subscription[]);
     }
+
+    // Filter for actual price increases (new > old)
+    if (!alertsRes.error && alertsRes.data) {
+      const subMap = new Map((subsRes.data || []).map((s: any) => [s.id, s]));
+      const increases = alertsRes.data
+        .filter((h: any) => h.old_price !== null && Number(h.new_price) > Number(h.old_price))
+        .filter((h: any) => subMap.has(h.subscription_id))
+        .map((h: any) => ({
+          sub: subMap.get(h.subscription_id),
+          change: { id: h.id, subscription_id: h.subscription_id, old_price: h.old_price, new_price: h.new_price, changed_at: h.changed_at },
+        }))
+        // Deduplicate by subscription_id (keep most recent)
+        .filter((item: any, idx: number, arr: any[]) =>
+          arr.findIndex((x: any) => x.sub.id === item.sub.id) === idx
+        );
+      setPriceAlerts(increases);
+    }
+
     setLoading(false);
   }, []);
 
@@ -134,6 +167,43 @@ export default function DashboardScreen() {
           <Text style={styles.heroCount}>{filteredSubscriptions.length} active</Text>
         </View>
       </ImageBackground>
+
+      {/* Price change alerts */}
+      {priceAlerts.length > 0 && (
+        <View style={[styles.alertCard, { backgroundColor: colors.surface }]}>
+          <View style={styles.alertHeader}>
+            <Text style={[styles.alertTitle, { color: colors.text }]}>⚠️ Price Increases</Text>
+            <Text style={[styles.alertCount, { color: '#FF3B30' }]}>{priceAlerts.length}</Text>
+          </View>
+          {priceAlerts.map(({ sub, change }) => {
+            const diff = Number(change.new_price) - Number(change.old_price);
+            const pct = change.old_price ? (diff / Number(change.old_price)) * 100 : 0;
+            const yearlyImpact = getYearlyCost(diff, sub.billing_cycle, sub.cycle_days);
+            return (
+              <Pressable
+                key={change.id}
+                style={[styles.alertItem, { borderBottomColor: colors.separator }]}
+                onPress={() => router.push(`/subscription/${sub.id}`)}
+              >
+                <Text style={styles.alertIcon}>{sub.icon}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.alertName, { color: colors.text }]}>{sub.name}</Text>
+                  <Text style={[styles.alertChange, { color: '#FF3B30' }]}>
+                    {formatCurrency(Number(change.old_price), sub.currency)} → {formatCurrency(Number(change.new_price), sub.currency)}
+                    {' '}({pct > 0 ? '+' : ''}{pct.toFixed(0)}%)
+                  </Text>
+                </View>
+                <View style={styles.alertImpact}>
+                  <Text style={[styles.alertImpactAmt, { color: '#FF3B30' }]}>
+                    +{formatCurrency(yearlyImpact, sub.currency)}
+                  </Text>
+                  <Text style={[styles.alertImpactLabel, { color: colors.textSecondary }]}>per year</Text>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
 
       {/* Search bar */}
       <View style={[styles.searchWrap, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -275,6 +345,17 @@ const styles = StyleSheet.create({
   heroRow: { flexDirection: 'row', gap: 16, marginTop: 4 },
   heroSecondary: { color: 'rgba(255,255,255,0.8)', fontSize: 14 },
   heroCount: { color: 'rgba(255,255,255,0.6)', fontSize: 14 },
+  alertCard: { borderRadius: 16, padding: 16, gap: 2 },
+  alertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  alertTitle: { fontSize: 16, fontWeight: '700' },
+  alertCount: { fontSize: 14, fontWeight: '800', backgroundColor: '#FF3B3015', paddingHorizontal: 10, paddingVertical: 2, borderRadius: 8 },
+  alertItem: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  alertIcon: { fontSize: 24 },
+  alertName: { fontSize: 15, fontWeight: '600' },
+  alertChange: { fontSize: 13, marginTop: 2 },
+  alertImpact: { alignItems: 'flex-end' },
+  alertImpactAmt: { fontSize: 16, fontWeight: '800' },
+  alertImpactLabel: { fontSize: 11 },
   searchWrap: {
     flexDirection: 'row',
     alignItems: 'center',

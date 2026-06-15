@@ -54,6 +54,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="offers"
+        options={{
+          title: 'Offers',
+          tabBarIcon: () => <TabBarIcon icon="🏷️" />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: 'Settings',

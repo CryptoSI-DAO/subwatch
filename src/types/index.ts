@@ -24,6 +24,25 @@ export interface PriceHistory {
   changed_at: string;
 }
 
+export interface Offer {
+  id: string;
+  name: string;
+  description: string | null;
+  category_id: number;
+  provider: string;
+  normal_price: number;
+  offer_price: number;
+  currency: string;
+  billing_cycle: string;
+  referral_url: string | null;
+  badge: 'weekly' | 'monthly';
+  start_date: string;
+  end_date: string;
+  icon: string;
+  color: string;
+  is_active: boolean;
+}
+
 export interface Category {
   id: number;
   name: string;

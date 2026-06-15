@@ -107,12 +107,7 @@ export default function SubscriptionDetailScreen() {
     const priceNum = parseFloat(newPrice);
     if (isNaN(priceNum)) return;
 
-    await supabase.from('price_history').insert({
-      subscription_id: sub.id,
-      old_price: sub.price,
-      new_price: priceNum,
-    });
-
+    // DB trigger auto-logs to price_history on price change — no manual insert needed
     await supabase.from('subscriptions').update({ price: priceNum }).eq('id', sub.id);
 
     setShowPriceModal(false);
