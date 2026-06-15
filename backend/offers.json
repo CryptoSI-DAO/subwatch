@@ -1,0 +1,88 @@
+{
+  "_comment": "Edit this file to manage SubWatch offers. Run the sync script (or let the cron handle it) to push changes to Supabase. Weekly offers refresh every Monday. Monthly offers refresh on the 1st.",
+  "_how_to_edit": "Update the arrays below. Set referral_url to your affiliate link. The script will auto-expire old offers and upsert these. Delete an entry to remove it.",
+
+  "weekly": [
+    {
+      "provider": "Max",
+      "name": "Max 50% Off 3 Months",
+      "description": "50% off your first 3 months. Stream HBO, DC, Warner Bros.",
+      "category_id": 1,
+      "normal_price": 15.99,
+      "offer_price": 7.99,
+      "currency": "USD",
+      "icon": "🎬",
+      "color": "#7B2CBF",
+      "referral_url": "https://www.max.com",
+      "sort_order": 1
+    },
+    {
+      "provider": "ExpressVPN",
+      "name": "ExpressVPN 49% Off + 3 Months Free",
+      "description": "49% off + 3 months free. Protect your browsing.",
+      "category_id": 9,
+      "normal_price": 12.95,
+      "offer_price": 6.67,
+      "currency": "USD",
+      "icon": "🛡️",
+      "color": "#DA373D",
+      "referral_url": "https://www.expressvpn.com",
+      "sort_order": 2
+    },
+    {
+      "provider": "Adobe",
+      "name": "Adobe Creative Cloud 40% Off",
+      "description": "40% off first year for new subscribers. All apps.",
+      "category_id": 6,
+      "normal_price": 59.99,
+      "offer_price": 35.99,
+      "currency": "USD",
+      "icon": "🎨",
+      "color": "#FA0F00",
+      "referral_url": "https://www.adobe.com",
+      "sort_order": 3
+    }
+  ],
+
+  "monthly": [
+    {
+      "provider": "Spotify",
+      "name": "Spotify Premium 3 Months Free",
+      "description": "3 months free, then $10.99/mo. Ad-free music + podcasts.",
+      "category_id": 2,
+      "normal_price": 10.99,
+      "offer_price": 0.00,
+      "currency": "USD",
+      "icon": "🎵",
+      "color": "#1DB954",
+      "referral_url": "https://www.spotify.com",
+      "sort_order": 1
+    },
+    {
+      "provider": "Audible",
+      "name": "Audible 60% Off 4 Months",
+      "description": "60% off for 4 months. Then $14.95/mo. Includes 1 credit/month.",
+      "category_id": 2,
+      "normal_price": 14.95,
+      "offer_price": 5.95,
+      "currency": "USD",
+      "icon": "🎧",
+      "color": "#F8991C",
+      "referral_url": "https://www.audible.com",
+      "sort_order": 2
+    },
+    {
+      "provider": "1Password",
+      "name": "1Password 50% Off First Year",
+      "description": "50% off your first year. Secure password manager for all devices.",
+      "category_id": 9,
+      "normal_price": 4.99,
+      "offer_price": 2.49,
+      "currency": "USD",
+      "icon": "🔑",
+      "color": "#0094F5",
+      "referral_url": "https://1password.com",
+      "sort_order": 3
+    }
+  ]
+}
