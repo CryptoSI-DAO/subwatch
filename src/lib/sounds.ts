@@ -73,6 +73,8 @@ async function initNative() {
       pop: require('@/assets/sounds/pop.wav'),
       whoosh: require('@/assets/sounds/whoosh.wav'),
       celebration: require('@/assets/sounds/celebration.wav'),
+      scratch: require('@/assets/sounds/scratch.wav'),
+      reveal: require('@/assets/sounds/reveal.wav'),
     };
     for (const [key, source] of Object.entries(sounds)) {
       const { sound } = await Audio.Sound.createAsync(source);
@@ -136,6 +138,52 @@ export function playCelebration() {
     playTone(ctx, { freq: 1568, duration: 0.25, type: 'sine', volume: 0.06, delay: 0.35 });
   } else {
     playNative('celebration');
+  }
+}
+
+/** Scratchy scraping sound — while scratching a scratch card. */
+export function playScratch() {
+  if (Platform.OS === 'web') {
+    const ctx = getCtx();
+    if (!ctx) return;
+    // Filtered noise burst = scratchy texture
+    const bufferSize = ctx.sampleRate * 0.15; // 150ms
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * 0.5; // white noise
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 2500;
+    filter.Q.value = 1.5;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.06, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    noise.start();
+    noise.stop(ctx.currentTime + 0.2);
+  } else {
+    playNative('scratch');
+  }
+}
+
+/** Satisfying "reveal" — a bright two-note shimmer when a scratch card is fully revealed. */
+export function playReveal() {
+  if (Platform.OS === 'web') {
+    const ctx = getCtx();
+    if (!ctx) return;
+    // Ascending shimmer: B5 → E6 → B6
+    playTone(ctx, { freq: 988,  duration: 0.10, type: 'sine',     volume: 0.12 });
+    playTone(ctx, { freq: 1319, duration: 0.12, type: 'sine',     volume: 0.14, delay: 0.05 });
+    playTone(ctx, { freq: 1976, duration: 0.20, type: 'triangle', volume: 0.10, delay: 0.10 });
+  } else {
+    playNative('reveal');
   }
 }
 

@@ -12,8 +12,9 @@ import {
 import { useFocusEffect } from 'expo-router';
 import { supabase } from '@/src/lib/supabase';
 import { useTheme } from '@/src/lib/theme';
-import { playCelebration, unlockAudio } from '@/src/lib/sounds';
+import { playCelebration, unlockAudio, playScratch, playReveal } from '@/src/lib/sounds';
 import { burstConfetti, tickerTape, miniPop } from '@/src/lib/confetti';
+import { ScratchCard } from '@/src/components/ScratchCard';
 import {
   type Offer,
   type Subscription,
@@ -73,6 +74,8 @@ export default function OffersScreen() {
 
   // Track whether we've already celebrated this session
   const hasCelebrated = useRef(false);
+  // Track which offers have been scratched/revealed (per session)
+  const [revealedOffers, setRevealedOffers] = useState<Set<string>>(new Set());
 
   useFocusEffect(
     useCallback(() => {
@@ -146,18 +149,24 @@ export default function OffersScreen() {
     const discountPct = offer.normal_price > 0
       ? Math.round((1 - offer.offer_price / offer.normal_price) * 100)
       : 100;
+    const isRevealed = revealedOffers.has(offer.id);
 
     return (
-      <Pressable
+      <ScratchCard
         key={key}
-        style={[styles.offerCard, { backgroundColor: colors.surface }]}
-        onPress={() => {
-          if (offer.referral_url) {
-            miniPop(); // 🎊 mini confetti on tapping an offer
-            Linking.openURL(offer.referral_url);
-          }
-        }}
+        revealed={isRevealed}
+        onReveal={() => setRevealedOffers(prev => new Set(prev).add(offer.id))}
+        height={165}
       >
+        <Pressable
+          style={[styles.offerCard, { backgroundColor: colors.surface }]}
+          onPress={() => {
+            if (isRevealed && offer.referral_url) {
+              miniPop();
+              Linking.openURL(offer.referral_url);
+            }
+          }}
+        >
         {/* Top row: icon + name + discount badge */}
         <View style={styles.offerHeader}>
           <View style={[styles.offerIconWrap, { backgroundColor: offer.color + '20' }]}>
@@ -230,7 +239,8 @@ export default function OffersScreen() {
             </Text>
           </View>
         )}
-      </Pressable>
+        </Pressable>
+      </ScratchCard>
     );
   }
 
