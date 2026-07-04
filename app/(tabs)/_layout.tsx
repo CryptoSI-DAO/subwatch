@@ -1,5 +1,7 @@
 import { Tabs } from 'expo-router';
 import { Pressable, Text } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Platform } from 'react-native';
 import { useTheme } from '@/src/lib/theme';
 
 function TabBarIcon({ icon }: { icon: string }) {
@@ -8,6 +10,8 @@ function TabBarIcon({ icon }: { icon: string }) {
 
 export default function TabLayout() {
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarHeight = 56 + (Platform.OS === 'android' ? Math.max(insets.bottom, 8) : 0);
 
   return (
     <Tabs
@@ -18,8 +22,8 @@ export default function TabLayout() {
           backgroundColor: colors.tabBar,
           borderTopWidth: 1,
           borderTopColor: colors.tabBarBorder,
-          paddingBottom: 4,
-          height: 56,
+          paddingBottom: Platform.OS === 'android' ? Math.max(insets.bottom, 8) : 4,
+          height: tabBarHeight,
         },
         headerTitleStyle: {
           fontSize: 20,

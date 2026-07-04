@@ -23,8 +23,20 @@ function AppContent() {
   const isInitialLoad = useRef(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // If we have a session but the token is expired, try to refresh it
+      if (session) {
+        const expiresAt = session.expires_at ?? 0;
+        const now = Math.floor(Date.now() / 1000);
+        if (expiresAt && expiresAt < now) {
+          const { data: { session: refreshed } } = await supabase.auth.refreshSession();
+          setSession(refreshed);
+        } else {
+          setSession(session);
+        }
+      } else {
+        setSession(null);
+      }
       setLoading(false);
     });
 
