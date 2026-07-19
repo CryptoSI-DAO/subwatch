@@ -6,3 +6,9 @@ node_modules/
 dist/
 web-build/
 .vercel
+
+# Build credentials
+/secrets/*.json
+/secrets/*.p8
+/secrets/*.cer
+

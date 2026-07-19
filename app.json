@@ -14,17 +14,25 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "org.cryptosi.subwatch"
+      "bundleIdentifier": "org.cryptosi.subwatch",
+      "infoPlist": {
+        "CFBundleLocalizations": ["en"],
+        "NSUserNotificationUsageDescription": "SubWatch sends weekly reminders to check your subscriptions for price changes.",
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "buildNumber": "1"
     },
     "android": {
       "package": "org.cryptosi.subwatch",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#007AFF",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": true
+      "predictiveBackGestureEnabled": true,
+      "permissions": ["NOTIFICATIONS", "SCHEDULE_EXACT_ALARM"]
     },
     "web": {
       "favicon": "./assets/favicon.png",
